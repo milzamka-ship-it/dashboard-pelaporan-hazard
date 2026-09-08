@@ -219,6 +219,7 @@ select:focus, .search-input:focus{outline:2px solid var(--accent);outline-offset
 .resume-count{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;color:#fff;flex:none;text-align:right;min-width:64px;}
 .resume-count span{display:block;font-family:'Inter',sans-serif;font-weight:500;font-size:10.5px;color:var(--text-faint);}
 .resume-empty{color:var(--text-faint);font-size:12.5px;padding:16px 0;text-align:center;}
+.resume-hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-faint);font-size:11.5px;}
 
 /* ---------- Modal ---------- */
 .modal-overlay{
@@ -248,6 +249,64 @@ select:focus, .search-input:focus{outline:2px solid var(--accent);outline-offset
 .modal-status.ok{color:#6FDB9A;}
 .modal-status.err{color:#F2857C;}
 .modal-actions{display:flex;align-items:center;gap:10px;}
+
+/* ---------- Multiselect (Minggu filter) ---------- */
+.multiselect{position:relative;}
+.multiselect-btn{
+  font-family:'Inter',sans-serif;background:var(--panel-2);border:1px solid var(--border);
+  color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;min-width:118px;
+  text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.multiselect-btn::after{content:"▾";color:var(--text-faint);font-size:11px;}
+.multiselect-btn:hover{border-color:var(--accent);}
+.multiselect-btn.active-filter{border-color:var(--accent);color:var(--accent);}
+.multiselect-panel{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:60;
+  background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
+  width:220px;box-shadow:0 12px 32px rgba(0,0,0,.5);padding:10px;
+}
+.multiselect-actions{display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.ms-link{background:none;border:none;color:var(--accent);font-size:11.5px;cursor:pointer;padding:2px 4px;font-family:'Inter',sans-serif;}
+.ms-link:hover{text-decoration:underline;}
+.ms-hint{font-size:11px;color:var(--text-faint);padding:2px 4px;}
+.multiselect-list{max-height:220px;overflow-y:auto;}
+.ms-item{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:13px;color:var(--text);cursor:pointer;border-radius:4px;}
+.ms-item:hover{background:var(--panel);}
+.ms-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+.ms-item-disabled{opacity:.35;cursor:not-allowed;}
+.ms-item-disabled input{cursor:not-allowed;}
+
+/* ---------- Resume comparison (multi-week) ---------- */
+.resume-compare-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;}
+.resume-week-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:16px 16px 8px;flex:0 0 260px;min-width:260px;
+}
+.resume-week-card h4{
+  font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--accent);
+  margin:0 0 2px;
+}
+.resume-week-card .sub{font-size:11px;color:var(--text-faint);margin-bottom:10px;}
+.resume-week-card .mini-title{
+  font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);
+  margin:12px 0 4px;font-weight:600;
+}
+.resume-week-card .mini-title:first-of-type{margin-top:0;}
+.resume-week-card .resume-row{padding:6px 0;}
+.resume-week-card .resume-rank{width:20px;height:20px;font-size:11px;}
+.resume-week-card .resume-label{font-size:11.5px;}
+.resume-week-card .resume-count{font-size:14px;min-width:44px;}
+.modal-divider{
+  display:flex;align-items:center;gap:12px;margin:22px 0 16px;
+  color:var(--text-faint);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+}
+.modal-divider::before,.modal-divider::after{content:"";flex:1;height:1px;background:var(--border);}
+.modal-textarea{
+  width:100%;font-family:'Inter',sans-serif;background:var(--panel-2);border:1px solid var(--border);
+  color:var(--text);padding:10px 12px;border-radius:7px;font-size:12px;margin-bottom:10px;
+  resize:vertical;line-height:1.5;
+}
+.modal-textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
 
 /* ---------- Table ---------- */
 .table-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:8px;}
@@ -341,7 +400,16 @@ tbody tr:hover{background:var(--panel-2);}
   </div>
   <div class="filter-group">
     <label>Minggu (ISO)</label>
-    <select id="filterMinggu"><option value="Semua">Semua</option></select>
+    <div class="multiselect" id="mingguMultiselect">
+      <button type="button" class="multiselect-btn" id="mingguBtn">Semua</button>
+      <div class="multiselect-panel hidden" id="mingguPanel">
+        <div class="multiselect-actions">
+          <span class="ms-hint">Pilih maks. 3 minggu</span>
+          <button type="button" class="ms-link" id="mingguClearBtn">Bersihkan</button>
+        </div>
+        <div class="multiselect-list" id="mingguList"></div>
+      </div>
+    </div>
   </div>
   <div class="filter-group">
     <label>Lokasi</label>
@@ -371,8 +439,8 @@ tbody tr:hover{background:var(--panel-2);}
 
     <div class="kpi-grid" id="kpiGrid"></div>
 
-    <div class="section-title">Resume Temuan</div>
-    <div class="chart-grid two" id="resumeTop5"></div>
+    <div class="section-title">Resume Temuan <span id="resumeHint" class="resume-hint"></span></div>
+    <div id="resumeTop5"></div>
 
     <div class="section-title">Tren &amp; Distribusi</div>
     <div class="chart-grid">
@@ -478,6 +546,21 @@ tbody tr:hover{background:var(--panel-2);}
       <div style="flex:1;"></div>
       <button class="btn btn-ghost" id="btnSheetsCancel">Tutup</button>
       <button class="btn btn-primary" id="btnSheetsSave">Simpan &amp; Ambil Data</button>
+    </div>
+
+    <div class="modal-divider"><span>atau, kalau cara di atas gagal terus</span></div>
+
+    <p class="modal-desc">
+      <b>Tempel manual</b> &mdash; tidak butuh internet sama sekali, jadi tetap jalan meski jaringan membatasi akses.
+      Buka Google Sheets Anda, klik salah satu sel lalu <b>Ctrl+A</b> (pilih semua) atau blok dari sel header sampai
+      baris data terakhir, <b>Ctrl+C</b>, lalu tempel (<b>Ctrl+V</b>) di kotak bawah ini.
+    </p>
+    <textarea class="modal-textarea" id="pasteDataInput" rows="6"
+      placeholder="Klik di sini lalu Ctrl+V setelah copy data (termasuk baris header) dari Google Sheets..."></textarea>
+    <div class="modal-status" id="pasteStatus"></div>
+    <div class="modal-actions">
+      <div style="flex:1;"></div>
+      <button class="btn btn-primary" id="btnPasteProcess">Proses Data yang Ditempel</button>
     </div>
   </div>
 </div>
@@ -761,6 +844,8 @@ function setSheetsStatus(msg, cls) {
 function openSheetsModal() {
   document.getElementById('sheetsUrlInput').value = getSheetsUrl();
   setSheetsStatus('', '');
+  setPasteStatus('', '');
+  document.getElementById('pasteDataInput').value = '';
   document.getElementById('sheetsModal').classList.remove('hidden');
 }
 function closeSheetsModal() {
@@ -787,6 +872,35 @@ function disconnectSheets() {
   document.getElementById('btnRefreshSheets').classList.add('hidden');
   setSheetsStatus('Sambungan ke Google Sheets diputus. Dashboard kembali ke mode upload manual.', '');
   showToast('Sambungan Google Sheets diputus.', '');
+}
+
+function setPasteStatus(msg, cls) {
+  const el = document.getElementById('pasteStatus');
+  el.textContent = msg;
+  el.className = 'modal-status' + (cls ? ' ' + cls : '');
+}
+
+function parseAndLoadPastedData(text) {
+  try {
+    if (!text || !text.trim()) throw new Error('Belum ada data yang ditempel di kotak.');
+    if (typeof XLSX === 'undefined') throw new Error('Modul pembaca data tidak termuat. Coba muat ulang halaman.');
+    const wb = XLSX.read(text, { type: 'string', FS: '\t', raw: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { defval: null, raw: true });
+    if (!json.length) throw new Error('Data tidak terbaca. Pastikan Anda menyalin termasuk baris header dari Google Sheets.');
+    const records = json.map(normalizeRow).filter(r => r.id);
+    if (!records.length) throw new Error('Tidak ada baris valid. Pastikan header kolom sesuai format export raw dan data disalin dari Google Sheets (bukan dari Word/PDF).');
+    RAW = records;
+    META = { source: 'paste', uploadedAt: new Date().toISOString(), rowCount: records.length };
+    saveToStorage(RAW, META);
+    afterDataLoaded();
+    setPasteStatus(records.length + ' baris berhasil dimuat dari data yang ditempel.', 'ok');
+    showToast(records.length + ' laporan berhasil dimuat (tempel manual).', 'success');
+    setTimeout(closeSheetsModal, 900);
+  } catch (err) {
+    console.error(err);
+    setPasteStatus('Gagal memproses: ' + err.message, 'err');
+  }
 }
 
 /* ==========================================================
@@ -877,6 +991,8 @@ function updateMetaInfo() {
   const dt = new Date(META.uploadedAt);
   const sourceLabel = META.source === 'sheets'
     ? 'Sumber: Google Sheets (otomatis)'
+    : META.source === 'paste'
+    ? 'Sumber: Tempel dari Google Sheets (manual)'
     : `File: <b>${META.filename || '-'}</b>`;
   el.innerHTML = `<b>${RAW.length.toLocaleString('id-ID')}</b> laporan dimuat &nbsp;·&nbsp; ${sourceLabel}<br>Terakhir update: ${fmtDate(dt)}`;
 }
@@ -887,7 +1003,6 @@ function updateMetaInfo() {
 function populateFilterOptions() {
   const tahunSel = document.getElementById('filterTahun');
   const bulanSel = document.getElementById('filterBulan');
-  const mingguSel = document.getElementById('filterMinggu');
   const lokasiSel = document.getElementById('filterLokasi');
 
   const tahuns = Array.from(new Set(RAW.map(r => r.tahun).filter(v => v != null))).sort((a,b) => b - a);
@@ -898,23 +1013,84 @@ function populateFilterOptions() {
     tahuns.map(t => `<option value="${t}">${t}</option>`).join('');
   bulanSel.innerHTML = '<option value="Semua">Semua</option>' +
     BULAN_NAMES.map(b => `<option value="${b}">${b}</option>`).join('');
-  mingguSel.innerHTML = '<option value="Semua">Semua</option>' +
-    minggus.map(w => `<option value="${w}">Minggu ${w}</option>`).join('');
   lokasiSel.innerHTML = '<option value="Semua">Semua</option>' +
     lokasis.map(l => `<option value="${l}">${l}</option>`).join('');
+
+  AVAILABLE_WEEKS = minggus;
+  selectedWeeks = new Set(Array.from(selectedWeeks).filter(w => minggus.includes(w)));
+  renderMingguList();
+  updateMingguButtonLabel();
+}
+
+/* ---------------- Minggu multi-select ---------------- */
+const MAX_WEEKS_SELECT = 3;
+let AVAILABLE_WEEKS = [];
+let selectedWeeks = new Set();
+
+function renderMingguList() {
+  const list = document.getElementById('mingguList');
+  const atMax = selectedWeeks.size >= MAX_WEEKS_SELECT;
+  list.innerHTML = AVAILABLE_WEEKS.map(w => {
+    const checked = selectedWeeks.has(w);
+    const disabled = atMax && !checked;
+    return `
+    <label class="ms-item${disabled ? ' ms-item-disabled' : ''}">
+      <input type="checkbox" value="${w}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+      Minggu ${w}
+    </label>`;
+  }).join('') || '<div style="color:var(--text-faint);font-size:12px;padding:6px 4px;">Tidak ada data minggu.</div>';
+
+  list.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const w = Number(cb.value);
+      if (cb.checked) {
+        if (selectedWeeks.size >= MAX_WEEKS_SELECT) {
+          cb.checked = false;
+          showToast('Maksimal ' + MAX_WEEKS_SELECT + ' minggu untuk dibandingkan. Hapus centang salah satu dulu.', 'warn');
+          return;
+        }
+        selectedWeeks.add(w);
+      } else {
+        selectedWeeks.delete(w);
+      }
+      updateMingguButtonLabel();
+      renderMingguList();
+      applyFilters();
+    });
+  });
+}
+
+function updateMingguButtonLabel() {
+  const btn = document.getElementById('mingguBtn');
+  if (selectedWeeks.size === 0) {
+    btn.textContent = 'Semua';
+    btn.classList.remove('active-filter');
+  } else if (selectedWeeks.size === 1) {
+    btn.textContent = 'Minggu ' + Array.from(selectedWeeks)[0];
+    btn.classList.add('active-filter');
+  } else {
+    btn.textContent = selectedWeeks.size + ' minggu dipilih';
+    btn.classList.add('active-filter');
+  }
+}
+
+function toggleMingguPanel() {
+  document.getElementById('mingguPanel').classList.toggle('hidden');
+}
+function closeMingguPanel() {
+  document.getElementById('mingguPanel').classList.add('hidden');
 }
 
 function applyFilters() {
   const ft = document.getElementById('filterTahun').value;
   const fb = document.getElementById('filterBulan').value;
-  const fm = document.getElementById('filterMinggu').value;
   const fl = document.getElementById('filterLokasi').value;
   const q = document.getElementById('searchBox').value.trim().toLowerCase();
 
   FILTERED = RAW.filter(r => {
     if (ft !== 'Semua' && String(r.tahun) !== ft) return false;
     if (fb !== 'Semua' && r.bulan_nama !== fb) return false;
-    if (fm !== 'Semua' && String(r.minggu) !== fm) return false;
+    if (selectedWeeks.size > 0 && !selectedWeeks.has(r.minggu)) return false;
     if (fl !== 'Semua' && r.lokasi !== fl) return false;
     if (q) {
       const hay = [r.pelapor, r.judul, r.deskripsi, r.lokasi, r.sub_lokasi, r.penindak, r.ketidaksesuaian]
@@ -934,7 +1110,9 @@ function applyFilters() {
 function resetFilters() {
   document.getElementById('filterTahun').value = 'Semua';
   document.getElementById('filterBulan').value = 'Semua';
-  document.getElementById('filterMinggu').value = 'Semua';
+  selectedWeeks = new Set();
+  renderMingguList();
+  updateMingguButtonLabel();
   document.getElementById('filterLokasi').value = 'Semua';
   document.getElementById('searchBox').value = '';
   applyFilters();
@@ -1000,39 +1178,67 @@ function resumeKey(r) {
   return r.penyebab || r.sub_ketidaksesuaian || r.ketidaksesuaian || null;
 }
 
-function renderResumeTop5() {
-  const container = document.getElementById('resumeTop5');
-  const jenisList = [
-    { code: 'TTA', title: 'Top 5 TTA', cls: 'jenis-tta' },
-    { code: 'KTA', title: 'Top 5 KTA', cls: 'jenis-kta' }
-  ];
+const JENIS_DEFS = [
+  { code: 'TTA', title: 'Top 5 TTA', cls: 'jenis-tta' },
+  { code: 'KTA', title: 'Top 5 KTA', cls: 'jenis-kta' }
+];
 
-  container.innerHTML = jenisList.map(j => {
-    const subset = FILTERED.filter(r => r.jenis === j.code);
-    const total = subset.length;
-    const m = countBy(subset, resumeKey);
-    const top5 = topN(m, 5);
-
-    const rowsHtml = top5.length ? top5.map((t, i) => {
-      const pct = total ? Math.round((t[1] / total) * 100) : 0;
-      return `
-        <div class="resume-row">
-          <div class="resume-rank">${i + 1}</div>
-          <div class="resume-body">
-            <div class="resume-label" title="${t[0]}">${t[0]}</div>
-            <div class="resume-bar-track"><div class="resume-bar-fill ${j.cls}" style="width:${pct}%"></div></div>
-          </div>
-          <div class="resume-count">${t[1]}<span>${pct}%</span></div>
-        </div>`;
-    }).join('') : `<div class="resume-empty">Tidak ada data ${j.code} pada filter ini.</div>`;
-
+function top5RowsHtml(subset, cls, jenisCode, compact) {
+  const total = subset.length;
+  const m = countBy(subset, resumeKey);
+  const top5 = topN(m, 5);
+  if (!top5.length) return `<div class="resume-empty">Tidak ada data ${jenisCode}.</div>`;
+  return top5.map((t, i) => {
+    const pct = total ? Math.round((t[1] / total) * 100) : 0;
     return `
-      <div class="panel">
-        <h3>${j.title}</h3>
-        <div class="sub">Penyebab/ketidaksesuaian terbanyak dari ${total.toLocaleString('id-ID')} laporan ${j.code} sesuai filter</div>
-        ${rowsHtml}
+      <div class="resume-row">
+        <div class="resume-rank">${i + 1}</div>
+        <div class="resume-body">
+          <div class="resume-label" title="${t[0]}">${t[0]}</div>
+          <div class="resume-bar-track"><div class="resume-bar-fill ${cls}" style="width:${pct}%"></div></div>
+        </div>
+        <div class="resume-count">${t[1]}<span>${pct}%</span></div>
       </div>`;
   }).join('');
+}
+
+function renderResumeTop5() {
+  const container = document.getElementById('resumeTop5');
+  const hint = document.getElementById('resumeHint');
+  const weeksToCompare = Array.from(selectedWeeks).sort((a, b) => a - b);
+
+  if (weeksToCompare.length >= 2) {
+    /* ---- Comparison mode: one card per selected week ---- */
+    hint.textContent = `— Perbandingan antar ${weeksToCompare.length} minggu terpilih`;
+    container.className = 'resume-compare-wrap';
+    container.innerHTML = weeksToCompare.map(w => {
+      const weekSubset = FILTERED.filter(r => r.minggu === w);
+      const ttaSubset = weekSubset.filter(r => r.jenis === 'TTA');
+      const ktaSubset = weekSubset.filter(r => r.jenis === 'KTA');
+      return `
+        <div class="resume-week-card">
+          <h4>Minggu ${w}</h4>
+          <div class="sub">${weekSubset.length.toLocaleString('id-ID')} laporan total</div>
+          <div class="mini-title">Top 5 TTA (${ttaSubset.length})</div>
+          ${top5RowsHtml(ttaSubset, 'jenis-tta', 'TTA')}
+          <div class="mini-title">Top 5 KTA (${ktaSubset.length})</div>
+          ${top5RowsHtml(ktaSubset, 'jenis-kta', 'KTA')}
+        </div>`;
+    }).join('');
+  } else {
+    /* ---- Default mode: one panel for TTA, one for KTA, across current filter ---- */
+    hint.textContent = '';
+    container.className = 'chart-grid two';
+    container.innerHTML = JENIS_DEFS.map(j => {
+      const subset = FILTERED.filter(r => r.jenis === j.code);
+      return `
+        <div class="panel">
+          <h3>${j.title}</h3>
+          <div class="sub">Penyebab/ketidaksesuaian terbanyak dari ${subset.length.toLocaleString('id-ID')} laporan ${j.code} sesuai filter</div>
+          ${top5RowsHtml(subset, j.cls, j.code)}
+        </div>`;
+    }).join('');
+  }
 }
 
 /* ---------------- CHARTS ---------------- */
@@ -1295,10 +1501,25 @@ function setupEventListeners() {
     const url = getSheetsUrl();
     if (url) fetchFromSheets(url, { silent: false });
   });
+  document.getElementById('btnPasteProcess').addEventListener('click', () => {
+    parseAndLoadPastedData(document.getElementById('pasteDataInput').value);
+  });
 
   document.getElementById('filterTahun').addEventListener('change', applyFilters);
   document.getElementById('filterBulan').addEventListener('change', applyFilters);
-  document.getElementById('filterMinggu').addEventListener('change', applyFilters);
+  document.getElementById('mingguBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    toggleMingguPanel();
+  });
+  document.getElementById('mingguClearBtn').addEventListener('click', () => {
+    selectedWeeks = new Set();
+    renderMingguList();
+    updateMingguButtonLabel();
+    applyFilters();
+  });
+  document.getElementById('mingguPanel').addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => closeMingguPanel());
+
   document.getElementById('filterLokasi').addEventListener('change', applyFilters);
   document.getElementById('searchBox').addEventListener('input', debounce(applyFilters, 220));
   document.getElementById('btnReset').addEventListener('click', resetFilters);
