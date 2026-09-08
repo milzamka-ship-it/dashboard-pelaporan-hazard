@@ -463,22 +463,30 @@ tbody tr:hover{background:var(--panel-2);}
         <div class="chart-box"><canvas id="chartStatus"></canvas></div>
       </div>
       <div class="panel">
-        <h3>Top Lokasi</h3>
-        <div class="sub">10 lokasi dengan laporan terbanyak</div>
-        <div class="chart-box"><canvas id="chartLokasi"></canvas></div>
+        <h3>Tingkat Risiko</h3>
+        <div class="sub">Low / Medium / High</div>
+        <div class="chart-box"><canvas id="chartRisiko"></canvas></div>
       </div>
     </div>
 
     <div class="chart-grid two" style="margin-top:14px;">
       <div class="panel">
+        <h3>Top Lokasi</h3>
+        <div class="sub">10 lokasi dengan laporan terbanyak</div>
+        <div class="chart-box"><canvas id="chartLokasi"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Top Sub Lokasi</h3>
+        <div class="sub">10 sub lokasi dengan laporan terbanyak</div>
+        <div class="chart-box"><canvas id="chartSubLokasi"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-grid" style="margin-top:14px;grid-template-columns:1fr;">
+      <div class="panel">
         <h3>Top Ketidaksesuaian</h3>
         <div class="sub">10 kategori ketidaksesuaian terbanyak</div>
         <div class="chart-box"><canvas id="chartKetidaksesuaian"></canvas></div>
-      </div>
-      <div class="panel">
-        <h3>Tingkat Risiko</h3>
-        <div class="sub">Low / Medium / High</div>
-        <div class="chart-box"><canvas id="chartRisiko"></canvas></div>
       </div>
     </div>
 
@@ -1248,6 +1256,29 @@ Chart.defaults.font.family = 'Inter';
 Chart.defaults.font.size = 11;
 Chart.defaults.borderColor = '#223347';
 
+/* Lightweight built-in "value label" plugin — no external dependency.
+   Draws the numeric value at the end of each horizontal bar. */
+const hBarValueLabels = {
+  id: 'hBarValueLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    ctx.save();
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.fillStyle = '#E7EDF5';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    chart.data.datasets.forEach((dataset, dsIndex) => {
+      const meta = chart.getDatasetMeta(dsIndex);
+      meta.data.forEach((bar, i) => {
+        const value = dataset.data[i];
+        if (value === null || value === undefined) return;
+        ctx.fillText(value.toLocaleString('id-ID'), bar.x + 6, bar.y);
+      });
+    });
+    ctx.restore();
+  }
+};
+
 function destroyChart(key) {
   if (CHARTS[key]) { CHARTS[key].destroy(); delete CHARTS[key]; }
 }
@@ -1261,6 +1292,7 @@ function renderCharts() {
   renderJenisChart();
   renderStatusChart();
   renderLokasiChart();
+  renderSubLokasiChart();
   renderKetidaksesuaianChart();
   renderRisikoChart();
 }
@@ -1324,9 +1356,11 @@ function renderStatusChart() {
     data: { labels, datasets: [{ data: values, backgroundColor: '#2FB6A8', borderRadius: 4, maxBarThickness: 22 }] },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 34 } },
       plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
-    }
+      scales: { x: { beginAtZero: true, grace: '12%', grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
+    },
+    plugins: [hBarValueLabels]
   });
 }
 
@@ -1343,9 +1377,32 @@ function renderLokasiChart() {
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 34 } },
       plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
-    }
+      scales: { x: { beginAtZero: true, grace: '12%', grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
+    },
+    plugins: [hBarValueLabels]
+  });
+}
+
+function renderSubLokasiChart() {
+  const m = countBy(FILTERED, r => r.sub_lokasi);
+  const top = topN(m, 10);
+  destroyChart('subLokasi');
+  const ctx = document.getElementById('chartSubLokasi').getContext('2d');
+  CHARTS.subLokasi = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top.map(t => t[0]),
+      datasets: [{ data: top.map(t => t[1]), backgroundColor: '#2FB6A8', borderRadius: 4, maxBarThickness: 18 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 34 } },
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, grace: '12%', grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
+    },
+    plugins: [hBarValueLabels]
   });
 }
 
@@ -1362,9 +1419,11 @@ function renderKetidaksesuaianChart() {
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 34 } },
       plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
-    }
+      scales: { x: { beginAtZero: true, grace: '12%', grid: { color: '#1A2740' } }, y: { grid: { display: false } } }
+    },
+    plugins: [hBarValueLabels]
   });
 }
 
